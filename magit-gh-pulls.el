@@ -75,6 +75,20 @@
   :group 'magit-gh-pulls
   :type 'boolean)
 
+(defcustom magit-gh-pulls-ask-for-pr-user-name nil
+  "If non-nil let the user confirm or change the Github user name
+  used in a pull request. If nil, the Github user name will be
+  inferred from the git configuration and repository remotes."
+  :group 'magit-gh-pulls
+  :type 'boolean)
+
+(defcustom magit-gh-pulls-ask-for-pr-project-name nil
+  "If non-nil let the user confirm or change the project name
+  used in a pull request. If nil, the project name will be
+  inferred from the git configuration and repository remotes."
+  :group 'magit-gh-pulls
+  :type 'boolean)
+
 (defvar magit-gh-pulls-maybe-filter-pulls 'identity
   "Filter function which should validate pulls you want to be
   viewed in magit. It receives a list of pull requests and should
@@ -524,10 +538,28 @@ option, or inferred from remotes."
           (browse-url url))
         (kill-new url)))))
 
+(defun magit-gh-pulls-read-string (prompt default-value)
+  (read-string (format "%s (default %s): " prompt default-value) nil nil default-value))
+
+(defun magit-gh-pulls-get-user-name (default-value)
+  (if magit-gh-pulls-ask-for-pr-user-name
+      (magit-gh-pulls-read-string "Github user" default-value)
+    default-value))
+
+(defun magit-gh-pulls-get-project-name (default-value)
+  (if magit-gh-pulls-ask-for-pr-project-name
+      (magit-gh-pulls-read-string "Project" default-value)
+    default-value))
+
+(defun magit-gh-pulls-get-target-repo ()
+  (let ((repo (magit-gh-pulls-guess-repo)))
+    (cons (magit-gh-pulls-get-user-name (car repo))
+          (magit-gh-pulls-get-project-name (cdr repo)))))
+
 (defun magit-gh-pulls-create-pull-request ()
   "Entrypoint for creating a new pull request."
   (interactive)
-  (when-let (repo (magit-gh-pulls-guess-repo))
+  (when-let (repo (magit-gh-pulls-get-target-repo))
     (lexical-let* ((user (car repo))
                    (proj (cdr repo))
                    (base-branch (magit-read-branch-or-commit "Base" "master"))
