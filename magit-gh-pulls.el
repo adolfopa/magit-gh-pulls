@@ -524,10 +524,31 @@ option, or inferred from remotes."
           (browse-url url))
         (kill-new url)))))
 
+(defvar magit-gh-pulls-ask-for-user t)
+(defvar magit-gh-pulls-ask-for-project t)
+
+(defun magit-gh-pulls-read-string (prompt default-value)
+  (read-string (format "%s (%s): " prompt default-value)))
+
+(defun magit-gh-pulls-read-user-name (default-value)
+  (if magit-gh-pulls-ask-for-user
+      (magit-gh-pulls-read-string "Github user" default-value)
+    default-value))
+
+(defun magit-gh-pulls-read-project-name (default-value)
+  (if magit-gh-pulls-ask-for-project
+      (magit-gh-pulls-read-string "Project" default-value)
+    default-value))
+
+(defun magit-gh-pulls-guess-target-repo ()
+  (let ((repo (magit-gh-pulls-guess-repo)))
+    (cons (magit-gh-pulls-read-user-name (car repo))
+          (magit-gh-pulls-read-project-name (cdr repo)))))
+
 (defun magit-gh-pulls-create-pull-request ()
   "Entrypoint for creating a new pull request."
   (interactive)
-  (when-let (repo (magit-gh-pulls-guess-repo))
+  (when-let (repo (magit-gh-pulls-guess-target-repo))
     (lexical-let* ((user (car repo))
                    (proj (cdr repo))
                    (base-branch (magit-read-branch-or-commit "Base" "master"))
